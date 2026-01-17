@@ -1,52 +1,60 @@
-# K3Cloud Python CLI & MCP Server
+# K3Cloud Python CLI
 
-这是一个基于 Python 的金蝶 K3 Cloud (Kingdee K3 Cloud) 接口工具集。它提供了命令行工具 (CLI) 用于本地测试和脚本调用，同时也包含了一个 Model Context Protocol (MCP) 服务器，允许 AI 助手（如 Trae, Claude Desktop 等）直接调用 K3 Cloud 的功能。
+这是一个基于 Python 的金蝶 K3 Cloud (Kingdee K3 Cloud) 命令行工具。它集成了官方 Python SDK，提供了便捷的命令行接口用于查询数据，并支持自动导出结果到 Excel。
 
-本项目集成了官方 Python SDK (V8.2.0)，支持标准签名和加密 AppSecret 的自动解密。
+## 功能特性
+
+- **数据查询**: 支持通过命令行查询业务单据（目前预置 `inventory` 即时库存查询）。
+- **自动 Excel 导出**: 查询结果会自动保存为 Excel 文件，支持追加模式。
+- **配置灵活**: 支持通过配置文件管理连接信息，支持加密的 AppSecret。
+- **SDK 集成**: 基于官方 `kingdee.cdp.webapi.sdk` 构建。
 
 ## 目录
 
-- [安装与配置](#安装与配置)
-- [命令行工具 (CLI) 使用指南](#命令行工具-cli-使用指南)
-  - [基础用法](#基础用法)
-  - [常用命令示例](#常用命令示例)
-- [MCP 服务器使用指南](#mcp-服务器使用指南)
+- [安装](#安装)
+- [配置](#配置)
+- [使用指南](#使用指南)
 
 ---
 
-## 安装与配置
+## 安装
 
-### 1. 环境准备
+1. 确保已安装 Python 3.10+。
 
-确保已安装 Python 3.10+。
+2. 安装项目依赖：
 
-```powershell
-# 安装依赖
-pip install -r requirements.txt
-```
+   ```powershell
+   pip install -r requirements.txt
+   ```
 
-### 2. 配置文件
+   > 注意：依赖中包含本地 wheel 包 `libs/kingdee.cdp.webapi.sdk-8.2.0-py3-none-any.whl`，请确保该文件存在。
 
-在 `src` 目录下创建或修改 `config.ini` 文件。
+---
 
-路径: `src/config.ini`
+## 配置
+
+在 `src` 目录下创建 `config.ini` 文件（如果不存在）。
+
+**文件路径**: `src/config.ini`
 
 ```ini
 [k3cloud]
 server_url=http://你的服务器IP/K3Cloud/
 acct_id=你的数据中心ID
 app_id=你的应用ID
-app_secret=你的应用密钥(支持明文或加密密文)
+app_secret=你的应用密钥
 user_name=用户名
 lcid=2052
 org_num=0
+# 可选：指定 Excel 输出文件路径。如果不指定，默认保存在 excel/ 目录下自动生成的文件中
+# excel_file=D:/data/k3cloud_data.xlsx
 ```
 
 ---
 
-## 命令行工具 (CLI) 使用指南
+## 使用指南
 
-入口文件为 `src/main.py`。
+工具入口为 `src/main.py`。
 
 ### 基础用法
 
@@ -56,110 +64,44 @@ python src/main.py [全局选项] <命令> [命令参数]
 
 **全局选项:**
 - `--config <路径>`: 指定配置文件路径 (默认: `src/config.ini`)
-- `--debug`: 开启调试模式，打印详细的请求和响应日志
-- `--output <文件路径>`: 将结果保存到指定的 JSON 或 Excel 文件 (支持 .json, .xlsx)
+- `--debug`: 开启调试模式，打印详细日志
 
-**自动 Excel 导出:**
-当查询命令（如 `inventory`, `sales-order`, `material-bill-query` 等）返回列表数据时，程序会自动在项目根目录下的 `excel` 文件夹中生成一个 Excel 文件，文件名包含时间戳。
+### 命令详解
 
-### 常用命令示例
+#### 1. 即时库存查询 (inventory)
 
-#### 1. 查询库存 (inventory)
-
-查询指定仓库的物料库存。
+查询库存数据，支持分页和过滤。
 
 ```powershell
-# 查询前 5 条库存数据
-python src/main.py inventory --limit 5
+# 查询前 10 条库存数据
+python src/main.py inventory --limit 10
 
-# 指定过滤条件 (例如: 仓库编码为 CK001)
-python src/main.py inventory --filter-string "FStockID.Fnumber='CK001'"
+# 查询特定仓库的库存 (使用 filter-string)
+python src/main.py inventory --filter-string "FStockID.FNumber='CK001'"
+
+# 查询所有库存 (limit设为0，会自动分页拉取所有数据)
+python src/main.py inventory --limit 0
 ```
 
-#### 2. 物料查询 (material-bill-query)
+**默认查询字段**: 
+`FmaterialID.Fnumber,FmaterialID.FName,FStockID.Fnumber,FStockID.Fname,fbaseqty,FModel`
 
-使用单据查询接口查询物料基础资料。
+可以通过 `--field-keys` 参数覆盖默认字段：
 
 ```powershell
-# 查询前 10 个物料，返回名称和编码
-python src/main.py material-bill-query --limit 10 --field-keys "FName,FNumber"
+python src/main.py inventory --limit 5 --field-keys "FMaterialID.FNumber,FBaseQty"
 ```
 
-#### 3. 保存物料 (material-save)
+### 结果输出
 
-创建一个新的物料。
+- **Excel 文件**: 
+  - 如果在 `config.ini` 中配置了 `excel_file`，则会追加到该文件中。
 
-```powershell
-# 创建一个测试物料
-python src/main.py material-save --number "TEST001" --name "测试物料" --create-org-number 100 --use-org-number 100
-```
+## 开发说明
 
-#### 4. 提交物料 (material-submit)
-
-提交已保存的物料。
-
-```powershell
-python src/main.py material-submit --number "TEST001"
-```
-
-#### 5. 审核物料 (material-audit)
-
-审核已提交的物料。
-
-```powershell
-python src/main.py material-audit --number "TEST001"
-```
-
-#### 6. 科目余额表查询 (gl-accountbalance)
-
-查询总账科目的余额。
-
-```powershell
-python src/main.py gl-accountbalance --start-year 2023 --start-period 1 --limit 5
-```
-
-#### 7. 执行任意服务 (execute)
-
-如果预置命令不满足需求，可以调用任意 K3 Cloud WebAPI 服务。
-
-```powershell
-# 示例：查询用户信息
-python src/main.py execute --service-url "Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery" --payload-json '{"FormId": "SEC_User", "FieldKeys": "FName", "Limit": 1}'
-```
-
-#### 8. 销售订单查询 (sales-order)
-
-查询销售订单数据。
-
-```powershell
-python src/main.py sales-order --limit 5
-```
-
-#### 9. 库存报表查询 (stock-report)
-
-查询库存报表。
-
-```powershell
-python src/main.py stock-report --limit 5
-```
-
----
-
-## MCP 服务器使用指南
-
-本项目包含一个 MCP (Model Context Protocol) 服务器，允许 AI 助手直接操作 K3 Cloud。
-
-**启动服务:**
-
-```powershell
-python src/mcp_server.py
-```
-
-**支持的工具 (Tools):**
-- `query_inventory`: 查询库存
-- `query_bill`: 通用单据查询
-- `save_bill`: 保存单据
-- `submit_bill`: 提交单据
-- `audit_bill`: 审核单据
-
-在 Trae 或 Claude Desktop 的配置中添加此 MCP 服务器即可使用。
+本项目核心逻辑位于 `src/` 目录：
+- `main.py`: 程序入口，处理参数解析。
+- `commands.py`: 注册和处理具体命令。
+- `client.py`: 封装 K3Cloud SDK 调用。
+- `config.py`: 配置加载。
+- `logger.py`: 日志模块封装。

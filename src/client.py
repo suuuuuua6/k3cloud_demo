@@ -7,7 +7,9 @@ from k3cloud_webapi_sdk.main import K3CloudApiSdk
 from config import K3CloudConfig
 from utils import decode_app_secret
 
-logger = logging.getLogger(__name__)
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class K3CloudClient:

@@ -4,18 +4,6 @@ import time
 from typing import Any, Dict
 from client import K3CloudClient
 
-def _print_result(value: Any) -> None:
-    if isinstance(value, str):
-        try:
-            obj = json.loads(value)
-            print(json.dumps(obj, ensure_ascii=False, indent=2))
-            return
-        except Exception:
-            print(value)
-            return
-    print(json.dumps(value, ensure_ascii=False, indent=2))
-
-
 COMMAND_HELP_MAP = {
     "inventory": "即时库存",
 }
@@ -38,7 +26,9 @@ def register_commands(subparsers) -> None:
 import json
 import logging
 
-logger = logging.getLogger(__name__)
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 def cmd_bill_query(client: K3CloudClient, args: argparse.Namespace) -> Any:
     """

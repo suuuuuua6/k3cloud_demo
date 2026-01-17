@@ -1,5 +1,4 @@
 requests>=2.0.0
-mcp
 ./libs/kingdee.cdp.webapi.sdk-8.2.0-py3-none-any.whl
 pandas>=2.0.0
 openpyxl>=3.0.0

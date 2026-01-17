@@ -9,12 +9,9 @@ from client import K3CloudClient
 import commands
 from config import default_config_path, load_config
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+from logger import get_logger, setup_logging
+
+logger = get_logger(__name__)
 
 
 def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
@@ -55,26 +52,6 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
                             os.makedirs(output_dir)
                         except Exception:
                             pass
-                elif args.output and args.output.endswith('.xlsx'):
-                    filename = args.output
-                else:
-                    timestamp = time.strftime("%Y%m%d_%H%M%S")
-                    
-                    # Determine output directory
-                    # Default to 'excel' subdirectory in project root, or current directory
-                    # Project root assumption: parent of src (where main.py is)
-                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    output_dir = os.path.join(project_root, 'excel')
-                    
-                    # Ensure directory exists
-                    if not os.path.exists(output_dir):
-                        try:
-                            os.makedirs(output_dir)
-                        except Exception:
-                            # Fallback to current directory if creation fails
-                            output_dir = os.getcwd()
-                    
-                    filename = os.path.join(output_dir, f"{command_name}_{timestamp}.xlsx")
                 
                 if is_list_of_dicts:
                     df = pd.DataFrame(output_data)
@@ -100,11 +77,6 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
                         logger.info(f"Result appended to Excel: {filename} (Sheet: {sheet_name})")
                      except Exception as e:
                         logger.error(f"Failed to append to Excel file (trying overwrite/create): {e}")
-                        # Fallback to write if append fails (e.g. file corrupted or locked?) 
-                        # Or maybe just try creating new one? 
-                        # Let's try to write as new if it failed, but that might overwrite.
-                        # Safe bet: just log error. But if file exists but is not valid excel, maybe we should overwrite?
-                        # For now, let's just log.
                 else:
                     # Create new file
                     with pd.ExcelWriter(filename, engine='openpyxl') as writer:
@@ -116,18 +88,6 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
             except Exception as e:
                 logger.error(f"Failed to save Excel file: {e}")
 
-    # Manual output to JSON (only if --output is specified and not .xlsx)
-    if args.output and not args.output.endswith('.xlsx'):
-        try:
-            with open(args.output, 'w', encoding='utf-8') as f:
-                json.dump(output_data, f, ensure_ascii=False, indent=2)
-            logger.info(f"Result saved to {args.output}")
-        except Exception as e:
-            logger.error(f"Failed to save output to file: {e}")
-
-    if not args.quiet:
-        from commands import _print_result
-        _print_result(result)
     return 0
 
 
@@ -136,8 +96,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", default=os.getenv("K3CLOUD_CONF") or default_config_path())
     parser.add_argument("--section", default=os.getenv("K3CLOUD_SECTION") or "k3cloud")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("--output", help="Save output to a JSON file")
-    parser.add_argument("--quiet", action="store_true", help="Suppress console output")
     subparsers = parser.add_subparsers(dest="command", required=True)
     commands.register_commands(subparsers)
     return parser
@@ -148,7 +106,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+        setup_logging(debug=True)
+    else:
+        setup_logging(debug=False)
 
     try:
         cfg = load_config(args.config, args.section)
