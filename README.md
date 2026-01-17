@@ -97,7 +97,7 @@ python src/main.py inventory --limit 5 --field-keys "FMaterialID.FNumber,FBaseQt
 查询采购订单数据。
 
 ```powershell
-python src/main.py purchase-order --limit 10
+python src/main.py purchase-order --limit 0
 ```
 
 #### 3. 采购入库单查询 (purchase-in)
@@ -105,7 +105,7 @@ python src/main.py purchase-order --limit 10
 查询采购入库单数据。
 
 ```powershell
-python src/main.py purchase-in --limit 10
+python src/main.py purchase-in --limit 0
 ```
 
 #### 4. 销售订单查询 (sales-order)
@@ -113,7 +113,7 @@ python src/main.py purchase-in --limit 10
 查询销售订单数据。
 
 ```powershell
-python src/main.py sales-order --limit 10
+python src/main.py sales-order --limit 0
 ```
 
 #### 5. 销售出库单查询 (sales-out)
@@ -121,7 +121,7 @@ python src/main.py sales-order --limit 10
 查询销售出库单数据。
 
 ```powershell
-python src/main.py sales-out --limit 10
+python src/main.py sales-out --limit 0
 ```
 
 ### 结果输出

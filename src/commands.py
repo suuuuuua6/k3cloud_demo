@@ -23,6 +23,9 @@ def register_commands(subparsers) -> None:
     )
     parser_inventory.add_argument("--filter-string", default="fbaseqty > 0")
     parser_inventory.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
+    parser_inventory.add_argument("--top-row-count", type=int, default=0)
+    parser_inventory.add_argument("--start-row", type=int, default=0)
+    parser_inventory.add_argument("--order-string", default="")
     parser_inventory.set_defaults(handler=cmd_bill_query)
 
     # Purchase Order Query
@@ -34,6 +37,9 @@ def register_commands(subparsers) -> None:
     )
     parser_purchase_order.add_argument("--filter-string", default="")
     parser_purchase_order.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
+    parser_purchase_order.add_argument("--top-row-count", type=int, default=0)
+    parser_purchase_order.add_argument("--start-row", type=int, default=0)
+    parser_purchase_order.add_argument("--order-string", default="")
     parser_purchase_order.set_defaults(handler=cmd_bill_query)
 
     # Purchase In Query
@@ -45,6 +51,9 @@ def register_commands(subparsers) -> None:
     )
     parser_purchase_in.add_argument("--filter-string", default="")
     parser_purchase_in.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
+    parser_purchase_in.add_argument("--top-row-count", type=int, default=0)
+    parser_purchase_in.add_argument("--start-row", type=int, default=0)
+    parser_purchase_in.add_argument("--order-string", default="")
     parser_purchase_in.set_defaults(handler=cmd_bill_query)
 
     # Sales Order Query
@@ -56,6 +65,9 @@ def register_commands(subparsers) -> None:
     )
     parser_sales_order.add_argument("--filter-string", default="")
     parser_sales_order.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
+    parser_sales_order.add_argument("--top-row-count", type=int, default=0)
+    parser_sales_order.add_argument("--start-row", type=int, default=0)
+    parser_sales_order.add_argument("--order-string", default="")
     parser_sales_order.set_defaults(handler=cmd_bill_query)
 
     # Sales out Query
@@ -67,6 +79,9 @@ def register_commands(subparsers) -> None:
     )
     parser_sales_out.add_argument("--filter-string", default="")
     parser_sales_out.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
+    parser_sales_out.add_argument("--top-row-count", type=int, default=0)
+    parser_sales_out.add_argument("--start-row", type=int, default=0)
+    parser_sales_out.add_argument("--order-string", default="")
     parser_sales_out.set_defaults(handler=cmd_bill_query)
 
 
@@ -103,6 +118,9 @@ def cmd_bill_query(client: K3CloudClient, args: argparse.Namespace) -> Any:
                 "FormId": form_id,
                 "FieldKeys": args.field_keys,
                 "FilterString": args.filter_string,
+                "OrderString": getattr(args, 'order_string', ''),
+                "TopRowCount": getattr(args, 'top_row_count', 0),
+                "StartRow": start_row,
                 "Limit": batch_size
             }
             
@@ -146,6 +164,9 @@ def cmd_bill_query(client: K3CloudClient, args: argparse.Namespace) -> Any:
         "FormId": form_id,
         "FieldKeys": args.field_keys,
         "FilterString": args.filter_string,
+        "OrderString": getattr(args, 'order_string', ''),
+        "TopRowCount": getattr(args, 'top_row_count', 0),
+        "StartRow": args.start_row,
         "Limit": args.limit,
     }
     return client.bill_query(data)
