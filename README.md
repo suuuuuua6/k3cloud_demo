@@ -123,6 +123,22 @@ python src/main.py gl-accountbalance --start-year 2023 --start-period 1 --limit 
 python src/main.py execute --service-url "Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery" --payload-json '{"FormId": "SEC_User", "FieldKeys": "FName", "Limit": 1}'
 ```
 
+#### 8. 销售订单查询 (sales-order)
+
+查询销售订单数据。
+
+```powershell
+python src/main.py sales-order --limit 5
+```
+
+#### 9. 库存报表查询 (stock-report)
+
+查询库存报表。
+
+```powershell
+python src/main.py stock-report --limit 5
+```
+
 ---
 
 ## MCP 服务器使用指南
