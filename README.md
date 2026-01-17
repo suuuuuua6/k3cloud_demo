@@ -18,7 +18,7 @@
 
 ### 1. 环境准备
 
-确保已安装 Python 3.8+。
+确保已安装 Python 3.10+。
 
 ```powershell
 # 安装依赖
@@ -57,6 +57,10 @@ python src/main.py [全局选项] <命令> [命令参数]
 **全局选项:**
 - `--config <路径>`: 指定配置文件路径 (默认: `src/config.ini`)
 - `--debug`: 开启调试模式，打印详细的请求和响应日志
+- `--output <文件路径>`: 将结果保存到指定的 JSON 或 Excel 文件 (支持 .json, .xlsx)
+
+**自动 Excel 导出:**
+当查询命令（如 `inventory`, `sales-order`, `material-bill-query` 等）返回列表数据时，程序会自动在项目根目录下的 `excel` 文件夹中生成一个 Excel 文件，文件名包含时间戳。
 
 ### 常用命令示例
 

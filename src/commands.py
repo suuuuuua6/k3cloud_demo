@@ -26,14 +26,15 @@ def register_commands(subparsers) -> None:
         "--field-keys",
         default="FmaterialID.Fnumber,FmaterialID.FName,FStockID.Fnumber,FStockID.Fname,fbaseqty,FModel",
     )
-    parser_inventory.add_argument("--filter-string", default="FStockID.Fnumber='104' and fbaseqty > 0")
+    # parser_inventory.add_argument("--filter-string", default="fbaseqty > 0")
+    parser_inventory.add_argument("--filter-string", default="fbaseqty > 0")
     parser_inventory.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
     parser_inventory.add_argument("--top-row-count", type=int, default=0)
     parser_inventory.add_argument("--start-row", type=int, default=0)
     parser_inventory.add_argument("--order-string", default="")
     parser_inventory.add_argument("--subsystem-id", default="")
     parser_inventory.add_argument("--timeout-s", type=float, default=0)
-    parser_inventory.set_defaults(handler=cmd_inventory_bill_query)
+    parser_inventory.set_defaults(handler=cmd_bill_query)
 
     # Material Execute Bill Query
     parser_mat_query = subparsers.add_parser("material-execute-bill-query", help="物料单据查询")
@@ -41,17 +42,17 @@ def register_commands(subparsers) -> None:
     parser_mat_query.add_argument("--filter-string", default="FNumber=''")
     parser_mat_query.add_argument("--top-row-count", type=int, default=100)
     parser_mat_query.add_argument("--start-row", type=int, default=0)
-    parser_mat_query.add_argument("--limit", type=int, default=2000)
-    parser_mat_query.set_defaults(handler=cmd_material_bill_query)
+    parser_mat_query.add_argument("--limit", type=int, default=0)
+    parser_mat_query.set_defaults(handler=cmd_bill_query)
 
     # Material Bill Query
     parser_mat_bill = subparsers.add_parser("material-bill-query", help="物料查询")
-    parser_mat_bill.add_argument("--field-keys", default="FName,FNumber,FCreateOrgId,FUseOrgId,")
+    parser_mat_bill.add_argument("--field-keys", default="FName,FCreateOrgId,FUseOrgId")
     parser_mat_bill.add_argument("--filter-string", default="FNumber=''")
     parser_mat_bill.add_argument("--top-row-count", type=int, default=100)
     parser_mat_bill.add_argument("--start-row", type=int, default=0)
     parser_mat_bill.add_argument("--limit", type=int, default=2000)
-    parser_mat_bill.set_defaults(handler=cmd_material_bill_query)
+    parser_mat_bill.set_defaults(handler=cmd_bill_query)
 
     # Material Save
     parser_mat_save = subparsers.add_parser("material-save", help="保存物料")
@@ -102,18 +103,6 @@ def register_commands(subparsers) -> None:
     parser_stock.add_argument("--limit", type=int, default=2000)
     parser_stock.set_defaults(handler=cmd_stock_report)
 
-    # Sales Order View
-    parser_sales_order = subparsers.add_parser("sales-order", help="销售订单查询")
-    parser_sales_order.add_argument("--form-id", default="SAL_SaleOrder")
-    parser_sales_order.add_argument("--field-keys", default="FEntryKey_FEntryId")
-    parser_sales_order.add_argument("--filter-string", default="")
-    parser_sales_order.add_argument("--order-string", default="")
-    parser_sales_order.add_argument("--top-row-count", type=int, default=0)
-    parser_sales_order.add_argument("--start-row", type=int, default=0)
-    parser_sales_order.add_argument("--limit", type=int, default=2000)
-    parser_sales_order.add_argument("--subsystem-id", default="")
-    parser_sales_order.set_defaults(handler=cmd_sales_order)
-
     # Generic Execute
     parser_exec = subparsers.add_parser("execute", help="执行任意服务")
     parser_exec.add_argument("--service-url", required=True)
@@ -134,40 +123,44 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def cmd_sales_order(client: K3CloudClient, args: argparse.Namespace) -> str:
-    data = {
-        "FormId": args.form_id,
-        "FieldKeys": args.field_keys,
-        "FilterString": args.filter_string,
-        "OrderString": args.order_string,
-        "TopRowCount": args.top_row_count,
-        "StartRow": args.start_row,
-        "Limit": args.limit,
-        "SubSystemId": args.subsystem_id,
-    }
-    return client.view("SAL_SaleOrder", data)
-
-def cmd_inventory_bill_query(client: K3CloudClient, args: argparse.Namespace) -> Any:
-    timeout_s = args.timeout_s if args.timeout_s and args.timeout_s > 0 else None
+def cmd_bill_query(client: K3CloudClient, args: argparse.Namespace) -> Any:
+    """
+    Generic bill query handler that supports pagination (when limit=0)
+    and standard single-page query.
+    """
+    timeout_s = getattr(args, 'timeout_s', 0)
+    timeout_s = timeout_s if timeout_s and timeout_s > 0 else None
     
+    form_id = getattr(args, 'form_id', '')
+    
+    # Special case: map command names to FormId if not explicitly provided or generic
+    if not form_id and hasattr(args, 'command'):
+        if args.command == 'material-bill-query' or args.command == 'material-execute-bill-query':
+            form_id = 'BD_MATERIAL'
+            
+    if not form_id:
+        # Fallback or error if FormId is missing
+        # For 'inventory', form_id is usually set by default in parser
+        pass
+
     # If limit is 0, we imply "fetch all" (using pagination)
     if args.limit <= 0:
         all_results = []
         start_row = args.start_row
         batch_size = 2000 # K3Cloud standard limit
         
-        logger.info(f"Fetching all inventory records with filter: {args.filter_string}")
+        logger.info(f"Fetching all records for {form_id} with filter: {args.filter_string}")
         
         while True:
             data = {
-                "FormId": args.form_id,
+                "FormId": form_id,
                 "FieldKeys": args.field_keys,
                 "FilterString": args.filter_string,
-                "OrderString": args.order_string,
-                "TopRowCount": args.top_row_count,
+                "OrderString": getattr(args, 'order_string', ''),
+                "TopRowCount": getattr(args, 'top_row_count', 0),
                 "StartRow": start_row,
                 "Limit": batch_size,
-                "SubSystemId": args.subsystem_id,
+                "SubSystemId": getattr(args, 'subsystem_id', ''),
             }
             
             result_str = client.bill_query(data, timeout_s=timeout_s)
@@ -176,14 +169,12 @@ def cmd_inventory_bill_query(client: K3CloudClient, args: argparse.Namespace) ->
                 batch_result = json.loads(result_str)
             except json.JSONDecodeError:
                 logger.error(f"Failed to decode JSON response: {result_str}")
-                # If we fail to parse, maybe return what we have or just raw string
                 if not all_results:
                     return result_str
                 break
             
             # Check for error in response structure
             if isinstance(batch_result, dict) and not batch_result.get('Result', {}).get('ResponseStatus', {}).get('IsSuccess', True):
-                 # If it's an error response, return it immediately if it's the first batch
                  if not all_results:
                      return batch_result
                  logger.error(f"Error during pagination: {batch_result}")
@@ -194,14 +185,12 @@ def cmd_inventory_bill_query(client: K3CloudClient, args: argparse.Namespace) ->
                     break
                 all_results.extend(batch_result)
                 
-                # If we got fewer records than requested, we are done
                 if len(batch_result) < batch_size:
                     break
                 
                 start_row += batch_size
                 logger.info(f"Fetched {len(all_results)} records so far...")
             else:
-                # Unexpected format
                 if not all_results:
                     return result_str
                 break
@@ -211,44 +200,17 @@ def cmd_inventory_bill_query(client: K3CloudClient, args: argparse.Namespace) ->
 
     # Standard behavior if limit is set
     data = {
-        "FormId": args.form_id,
+        "FormId": form_id,
         "FieldKeys": args.field_keys,
         "FilterString": args.filter_string,
-        "OrderString": args.order_string,
-        "TopRowCount": args.top_row_count,
+        "OrderString": getattr(args, 'order_string', ''),
+        "TopRowCount": getattr(args, 'top_row_count', 0),
         "StartRow": args.start_row,
         "Limit": args.limit,
-        "SubSystemId": args.subsystem_id,
+        "SubSystemId": getattr(args, 'subsystem_id', ''),
     }
     return client.bill_query(data, timeout_s=timeout_s)
 
-
-def cmd_material_bill_query(client: K3CloudClient, args: argparse.Namespace) -> str:
-    data = {
-        "FormId": "BD_MATERIAL",
-        "FieldKeys": args.field_keys,
-        "FilterString": args.filter_string,
-        "OrderString": "",
-        "TopRowCount": args.top_row_count,
-        "StartRow": args.start_row,
-        "Limit": args.limit,
-        "SubSystemId": "",
-    }
-    return client.bill_query(data)
-
-
-def cmd_material_bill_query(client: K3CloudClient, args: argparse.Namespace) -> str:
-    data = {
-        "FormId": "BD_MATERIAL",
-        "FieldKeys": args.field_keys,
-        "FilterString": args.filter_string,
-        "OrderString": "",
-        "TopRowCount": args.top_row_count,
-        "StartRow": args.start_row,
-        "Limit": args.limit,
-        "SubSystemId": "",
-    }
-    return client.bill_query(data)
 
 
 def cmd_material_save(client: K3CloudClient, args: argparse.Namespace) -> str:
@@ -350,10 +312,6 @@ def cmd_stock_report(client: K3CloudClient, args: argparse.Namespace) -> str:
     # Explicit service URL from original code
     url = "Kingdee.K3.SCM.WebApi.ServicesStub.StockReportQueryService.GetReportData"
     return client.execute_service(url, data)
-
-
-
-
 
 def cmd_execute(client: K3CloudClient, args: argparse.Namespace) -> str:
     payload = json.loads(args.payload_json) if args.payload_json else {}
