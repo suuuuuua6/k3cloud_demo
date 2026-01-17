@@ -25,12 +25,9 @@ class K3CloudClient:
 
     def _init_sdk(self) -> K3CloudApiSdk:
         sdk = K3CloudApiSdk(self._config.server_url)
-        
-        # Handle potential encrypted app_secret
+
         app_secret = decode_app_secret(self._config.app_secret)
         
-        # Initialize configuration
-        # Based on inspection: (self, acct_id, user_name, app_id, app_secret, server_url, lcid=2052, org_num=0, ...)
         try:
             sdk.InitConfig(
                 self._config.acct_id,
@@ -47,9 +44,6 @@ class K3CloudClient:
 
         return sdk
 
-    def execute_bill_query(self, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
-        return self._sdk.ExecuteBillQuery(data)
-
     def bill_query(self, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
         return self._sdk.ExecuteBillQuery(data)
 
@@ -62,6 +56,9 @@ class K3CloudClient:
     def audit(self, form_id: str, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
         return self._sdk.Audit(form_id, data)
 
+    def view(self, form_id: str, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
+        return self._sdk.View(form_id, data)
+
     def flex_save(self, form_id: str, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
         return self._sdk.FlexSave(form_id, data)
     
@@ -72,3 +69,9 @@ class K3CloudClient:
 
     def execute_service(self, service_full_name: str, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
         return self._sdk.Execute(service_full_name, data)
+
+    def query_business_info(self, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
+        return self._sdk.QueryBusinessInfo(data)
+
+    def query_group_info(self, data: Dict[str, Any], timeout_s: Optional[float] = None) -> Any:
+        return self._sdk.QueryGroupInfo(data)
