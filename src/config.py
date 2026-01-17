@@ -13,6 +13,7 @@ class K3CloudConfig:
     user_name: str
     lcid: int = 2052
     org_num: int = 0
+    excel_file: Optional[str] = None
 
 
 def default_config_path() -> str:
@@ -56,6 +57,7 @@ def load_config(config_path: str, section: str = "k3cloud") -> K3CloudConfig:
     )
     lcid_raw = _get_case_insensitive(raw, "lcid") or _get_case_insensitive(raw, "X-KDApi-LCID") or "2052"
     org_num_raw = _get_case_insensitive(raw, "org_num") or _get_case_insensitive(raw, "X-KDApi-OrgNum") or "0"
+    excel_file = _get_case_insensitive(raw, "excel_file")
 
     missing = []
     if not server_url: missing.append("server_url")
@@ -85,4 +87,5 @@ def load_config(config_path: str, section: str = "k3cloud") -> K3CloudConfig:
         user_name=user_name, # type: ignore
         lcid=lcid,
         org_num=org_num,
+        excel_file=excel_file,
     )

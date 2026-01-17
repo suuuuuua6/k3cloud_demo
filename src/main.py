@@ -6,7 +6,7 @@ from typing import List, Optional
 
 import json
 from client import K3CloudClient
-from commands import register_commands
+import commands
 from config import default_config_path, load_config
 
 # Configure logging
@@ -41,12 +41,24 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
                 import pandas as pd
                 import time
                 
-                # Use provided output filename or generate one
-                if args.output and args.output.endswith('.xlsx'):
+                # Determine sheet name
+                command_name = args.command if hasattr(args, 'command') else 'query'
+                sheet_name = commands.COMMAND_HELP_MAP.get(command_name, command_name)
+                
+                # Determine output filename
+                if client.config.excel_file:
+                    filename = client.config.excel_file
+                    # Ensure directory exists if path contains directory
+                    output_dir = os.path.dirname(filename)
+                    if output_dir and not os.path.exists(output_dir):
+                        try:
+                            os.makedirs(output_dir)
+                        except Exception:
+                            pass
+                elif args.output and args.output.endswith('.xlsx'):
                     filename = args.output
                 else:
                     timestamp = time.strftime("%Y%m%d_%H%M%S")
-                    command_name = args.command if hasattr(args, 'command') else 'query'
                     
                     # Determine output directory
                     # Default to 'excel' subdirectory in project root, or current directory
@@ -79,10 +91,26 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
                         
                     df = pd.DataFrame(output_data, columns=columns)
 
-                # index=False: Do not write row numbers
-                # startrow=0: Header at row 0 (Excel line 1), Data starts at row 1 (Excel line 2)
-                df.to_excel(filename, index=False)
-                logger.info(f"Result automatically saved to Excel: {filename}")
+                # Write to Excel
+                if client.config.excel_file and os.path.exists(filename):
+                     # Append mode
+                     try:
+                        with pd.ExcelWriter(filename, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
+                            df.to_excel(writer, sheet_name=sheet_name, index=False)
+                        logger.info(f"Result appended to Excel: {filename} (Sheet: {sheet_name})")
+                     except Exception as e:
+                        logger.error(f"Failed to append to Excel file (trying overwrite/create): {e}")
+                        # Fallback to write if append fails (e.g. file corrupted or locked?) 
+                        # Or maybe just try creating new one? 
+                        # Let's try to write as new if it failed, but that might overwrite.
+                        # Safe bet: just log error. But if file exists but is not valid excel, maybe we should overwrite?
+                        # For now, let's just log.
+                else:
+                    # Create new file
+                    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    logger.info(f"Result saved to Excel: {filename} (Sheet: {sheet_name})")
+
             except ImportError:
                 logger.warning("pandas or openpyxl not installed. Skipping automatic Excel export.")
             except Exception as e:
@@ -97,8 +125,9 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
         except Exception as e:
             logger.error(f"Failed to save output to file: {e}")
 
-    from commands import _print_result
-    _print_result(result)
+    if not args.quiet:
+        from commands import _print_result
+        _print_result(result)
     return 0
 
 
@@ -108,8 +137,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--section", default=os.getenv("K3CLOUD_SECTION") or "k3cloud")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--output", help="Save output to a JSON file")
+    parser.add_argument("--quiet", action="store_true", help="Suppress console output")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    register_commands(subparsers)
+    commands.register_commands(subparsers)
     return parser
 
 
