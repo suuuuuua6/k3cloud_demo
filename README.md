@@ -23,7 +23,7 @@
 
 2. 安装项目依赖：
 
-   ```powershell
+   ```cmd
    pip install -r requirements.txt
    ```
 
@@ -58,7 +58,7 @@ org_num=0
 
 ### 基础用法
 
-```powershell
+```cmd
 python src/main.py [全局选项] <命令> [命令参数]
 ```
 
@@ -72,7 +72,7 @@ python src/main.py [全局选项] <命令> [命令参数]
 
 查询库存数据，支持分页和过滤。
 
-```powershell
+```cmd
 # 查询前 10 条库存数据
 python src/main.py inventory --limit 10
 
@@ -88,7 +88,7 @@ python src/main.py inventory --limit 0
 
 可以通过 `--field-keys` 参数覆盖默认字段：
 
-```powershell
+```cmd
 python src/main.py inventory --limit 5 --field-keys "FMaterialID.FNumber,FBaseQty"
 ```
 
@@ -96,7 +96,7 @@ python src/main.py inventory --limit 5 --field-keys "FMaterialID.FNumber,FBaseQt
 
 查询采购订单数据。
 
-```powershell
+```cmd
 python src/main.py purchase-order --limit 0
 ```
 
@@ -104,23 +104,30 @@ python src/main.py purchase-order --limit 0
 
 查询采购入库单数据。
 
-```powershell
+```cmd
 python src/main.py purchase-in --limit 0
 ```
 
 #### 4. 销售订单查询 (sales-order)
 
-查询销售订单数据。
+查询销售订单数据（默认按日期倒序 `FDate DESC`，优先返回最新单据）。
 
-```powershell
-python src/main.py sales-order --limit 0
+```cmd
+python src/main.py sales-order --limit 10
+```
+
+**自定义查询字段**:
+如果需要查询特定字段，可以使用 `--field-keys` 参数指定（多个字段用逗号分隔）。
+例如：
+```cmd
+python src/main.py sales-order --limit 10 --field-keys "FBillNo,FDate,FCustId,FAmount"
 ```
 
 #### 5. 销售出库单查询 (sales-out)
 
 查询销售出库单数据。
 
-```powershell
+```cmd
 python src/main.py sales-out --limit 0
 ```
 

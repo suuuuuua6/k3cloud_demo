@@ -66,7 +66,7 @@ def register_commands(subparsers) -> None:
     parser_sales_order.add_argument("--filter-string", default="")
     parser_sales_order.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
     parser_sales_order.add_argument("--top-row-count", type=int, default=0)
-    parser_sales_order.add_argument("--start-row", type=int, default=200000)
+    parser_sales_order.add_argument("--start-row", type=int, default=0)
     parser_sales_order.add_argument("--order-string", default="")
     parser_sales_order.set_defaults(handler=cmd_bill_query)
 
@@ -80,7 +80,7 @@ def register_commands(subparsers) -> None:
     parser_sales_out.add_argument("--filter-string", default="")
     parser_sales_out.add_argument("--limit", type=int, default=0, help="Limit number of records, 0 for all")
     parser_sales_out.add_argument("--top-row-count", type=int, default=0)
-    parser_sales_out.add_argument("--start-row", type=int, default=400000)
+    parser_sales_out.add_argument("--start-row", type=int, default=0)
     parser_sales_out.add_argument("--order-string", default="")
     parser_sales_out.set_defaults(handler=cmd_bill_query)
 
