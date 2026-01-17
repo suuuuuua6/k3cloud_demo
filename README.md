@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- **数据查询**: 支持通过命令行查询业务单据（目前预置 `inventory` 即时库存查询）。
+- **数据查询**: 支持通过命令行查询业务单据（支持 `inventory` 即时库存, `purchase-order` 采购订单, `purchase-in` 采购入库单, `sales-order` 销售订单, `sales-out` 销售出库单）。
 - **自动 Excel 导出**: 查询结果会自动保存为 Excel 文件，支持追加模式。
 - **配置灵活**: 支持通过配置文件管理连接信息，支持加密的 AppSecret。
 - **SDK 集成**: 基于官方 `kingdee.cdp.webapi.sdk` 构建。
@@ -90,6 +90,38 @@ python src/main.py inventory --limit 0
 
 ```powershell
 python src/main.py inventory --limit 5 --field-keys "FMaterialID.FNumber,FBaseQty"
+```
+
+#### 2. 采购订单查询 (purchase-order)
+
+查询采购订单数据。
+
+```powershell
+python src/main.py purchase-order --limit 10
+```
+
+#### 3. 采购入库单查询 (purchase-in)
+
+查询采购入库单数据。
+
+```powershell
+python src/main.py purchase-in --limit 10
+```
+
+#### 4. 销售订单查询 (sales-order)
+
+查询销售订单数据。
+
+```powershell
+python src/main.py sales-order --limit 10
+```
+
+#### 5. 销售出库单查询 (sales-out)
+
+查询销售出库单数据。
+
+```powershell
+python src/main.py sales-out --limit 10
 ```
 
 ### 结果输出

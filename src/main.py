@@ -66,6 +66,11 @@ def run_command(client: K3CloudClient, args: argparse.Namespace) -> int:
                         # But typically for K3Cloud ExecuteBillQuery, they match.
                         # If mismatch, pandas handles it (either ignores extra names or creates NaN for missing)
                         
+                    # Fix: if columns count mismatch, just use default (0, 1, 2...) or truncate/pad
+                    if columns and len(output_data) > 0 and len(output_data[0]) != len(columns):
+                         logger.warning(f"Column count mismatch: Data has {len(output_data[0])} columns, but field_keys has {len(columns)}. Using default column names.")
+                         columns = None
+                         
                     df = pd.DataFrame(output_data, columns=columns)
 
                 # Write to Excel
